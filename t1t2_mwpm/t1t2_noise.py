@@ -10,7 +10,11 @@ ANNOTATIONS = ["QUBIT_COORDS", "DETECTOR", "OBSERVABLE_INCLUDE", "TICK", "SHIFT_
 
 
 def add_t1t2_noise(
-    circuit: stim.Circuit, t1: dict, t2: dict, op_duration: dict
+    circuit: stim.Circuit,
+    t1: dict,
+    t2: dict,
+    op_duration: dict,
+    symmetrize_noise: bool = True,
 ) -> stim.Circuit:
     """
     Returns circuit with amplitude and phase damping noise
@@ -36,6 +40,8 @@ def add_t1t2_noise(
         Dictionary with the operation times of every operation in the circuit
         following the same labelling as in the stim circuit.
         Note: use same units for t1, t2 and op_duration.
+    symmetrize_noise
+        Bool to add the noise symmetrically before and after the gate.
 
     Returns
     -------
@@ -92,13 +98,10 @@ def add_t1t2_noise(
         # add noise in block
         t = max([duration[i.name] for i in block], default=0)
 
-        for q in qubits:
-            px, py, pz = get_perror_from_t1t2(t=t, t1=t1[q], t2=t2[q])
-            block.append(
-                stim.CircuitInstruction(
-                    name="PAULI_CHANNEL_1", targets=[q], gate_args=[px, py, pz]
-                )
-            )
+        if symmetrize_noise:
+            block = add_symmetric_noise_to_block(block, t, t1, t2, qubits)
+        else:
+            block = add_noise_to_block(block, t, t1, t2, qubits)
 
         # append block to noisy circuit
         for instr in block:
@@ -110,6 +113,82 @@ def add_t1t2_noise(
         block = []
 
     return noisy_circuit
+
+
+def add_noise_to_block(block: list, t: float, t1: dict, t2: dict, qubits: list):
+    """
+    Add noise to the specified qubits at the end of the block given t, T1, T2.
+
+    Parameters
+    ----------
+    block
+        List of operations to the qubits
+    t
+        Duration of the block.
+        Note: use same units for t1, t2 and t.
+    t1
+        Dictionary with the T1 times of every qubit in the circuit
+        following the same labelling as in the stim circuit.
+        Note: use same units for t1, t2 and t.
+    t2
+        Dictionary with the T2 times of every qubit in the circuit
+        following the same labelling as in the stim circuit.
+        Note: use same units for t1, t2 and t.
+    qubits
+        Qubits in which to add noise
+
+    Returns
+    -------
+    block
+        Same list of operations with noise
+    """
+    for q in qubits:
+        px, py, pz = get_perror_from_t1t2(t=t, t1=t1[q], t2=t2[q])
+        block.append(
+            stim.CircuitInstruction(
+                name="PAULI_CHANNEL_1", targets=[q], gate_args=[px, py, pz]
+            )
+        )
+    return block
+
+
+def add_symmetric_noise_to_block(
+    block: list, t: float, t1: dict, t2: dict, qubits: list
+):
+    """
+    Add symmetric noise to the specified qubits at the beginning
+    and end of the block given t, T1, T2.
+
+    Parameters
+    ----------
+    block
+        List of operations to the qubits
+    t
+        Duration of the block.
+        Note: use same units for t1, t2 and t.
+    t1
+        Dictionary with the T1 times of every qubit in the circuit
+        following the same labelling as in the stim circuit.
+        Note: use same units for t1, t2 and t.
+    t2
+        Dictionary with the T2 times of every qubit in the circuit
+        following the same labelling as in the stim circuit.
+        Note: use same units for t1, t2 and t.
+    qubits
+        Qubits in which to add noise
+
+    Returns
+    -------
+    block
+        Same list of operations with noise
+    """
+    for q in qubits:
+        px, py, pz = get_perror_from_t1t2(t=t / 2, t1=t1[q], t2=t2[q])
+        noise_circ = stim.CircuitInstruction(
+            name="PAULI_CHANNEL_1", targets=[q], gate_args=[px, py, pz]
+        )
+        block = [noise_circ, *block, noise_circ]
+    return block
 
 
 def get_perror_from_t1t2(t: float, t1: float, t2: float) -> Tuple[float, float, float]:
@@ -155,6 +234,7 @@ def get_mwpm(
     t2: dict,
     op_duration: dict,
     approximate_disjoint_errors: bool = False,
+    symmetrize_noise: bool = True,
 ) -> Matching:
     """
     Returns a MWPM initialized with amplitude and phase damping noise
@@ -183,6 +263,8 @@ def get_mwpm(
     approximate_disjoint_errors
         Flag for stim.Circuit.detector_error_model().
         See stim's documentation.
+    symmetrize_noise
+        Bool to add the noise symmetrically before and after the gate.
 
     Returns
     -------
@@ -192,7 +274,11 @@ def get_mwpm(
     """
 
     noisy_circuit = add_t1t2_noise(
-        circuit=circuit, t1=t1, t2=t2, op_duration=op_duration
+        circuit=circuit,
+        t1=t1,
+        t2=t2,
+        op_duration=op_duration,
+        symmetrize_noise=symmetrize_noise,
     )
     dem = noisy_circuit.detector_error_model(
         decompose_errors=True,

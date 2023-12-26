@@ -15,6 +15,7 @@ def test_get_mwpm():
         t1={i: 20 for i in range(9)},
         t2={i: 10 for i in range(9)},
         op_duration={"MR": 50, "M": 50, "CX": 10, "R": 100},
+        symmetrize_noise=True,
     )
     assert isinstance(decoder, Matching)
 
@@ -30,6 +31,7 @@ def test_add_t1t2_noise():
         t1={i: 20 for i in range(9)},
         t2={i: 10 for i in range(9)},
         op_duration={"MR": 50, "M": 50, "CX": 10, "R": 100},
+        symmetrize_noise=True,
     )
     assert isinstance(noisy_circuit, stim.Circuit)
 
