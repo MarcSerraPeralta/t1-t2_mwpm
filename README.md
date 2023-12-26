@@ -1,6 +1,8 @@
 # T1T2_mwpm
 Adds amplitude and phase damping noise to a `stim` circuit given the T1 and T2 times and the operation durations. This is also used to initialize a `pymatching.Matching` MWPM decoder. 
 
+As this repository uses the Pauli Twirl Approximation (PTA), the noise model from T1 and T2 underestimates the actual noise. 
+
 # Example
 
 The inputs of the functions in this repository are: (1) QEC circuit, (2) T1 times, (3) T2 times, (4) gate durations. 
