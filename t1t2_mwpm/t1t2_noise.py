@@ -57,12 +57,12 @@ def add_t1t2_noise(
     qubits = [i.targets_copy() for i in circuit.flattened() if i.name in MEASUREMENTS]
     qubits = [x for xs in qubits for x in xs]  # flatten list
     qubits = set([q.qubit_value for q in qubits])
-    if set(t1) < qubits:
+    if qubits - set(t1):
         raise ValueError(
             "T1 must contain all the qubits in the circuit,"
             f"missing the following qubits: {set(qubits) - set(t1)}"
         )
-    if set(t2) < qubits:
+    if qubits - set(t2):
         raise ValueError(
             "T2 must contain all the qubits in the circuit,"
             f"missing the following qubits: {set(qubits) - set(t2)}"
