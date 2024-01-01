@@ -1,4 +1,4 @@
-from . import t1t2_noise
-from .t1t2_noise import get_mwpm, add_t1t2_noise
-
-__all__ = ["get_mwpm", "add_t1t2_noise"]
+from .setup import Setup
+from .models import DecoherenceModel
+from .util import add_noise
+__all__ = ["Setup", "DecoherenceModel", "add_noise"]
