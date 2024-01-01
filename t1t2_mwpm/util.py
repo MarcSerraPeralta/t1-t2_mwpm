@@ -41,7 +41,7 @@ def add_noise(
         inds = [target.value for target in targets]
         duration = model.setup.gate_durations[name]
 
-        for inst in model.generic_gate(name, inds):
+        for inst in model.generic_op(name, inds):
             noisy_circuit.append(inst)
 
         idle_inds = qubit_inds - set(inds)
