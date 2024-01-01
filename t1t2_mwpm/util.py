@@ -4,12 +4,12 @@ from .models import Model
 from . import gates
 
 
-def add_noise(
+def add_noise_to_stim(
     circuit: Circuit,
     model: Model,
 ) -> Circuit:
     """
-    add_noise Adds noise to an ideal Stim circuit.
+    add_noise_to_stim Adds noise to an ideal Stim circuit.
 
     Parameters
     ----------
