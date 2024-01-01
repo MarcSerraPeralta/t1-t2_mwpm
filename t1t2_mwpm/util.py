@@ -1,7 +1,8 @@
 from stim import Circuit
 
-from .models import Model
-from . import gates
+from t1t2_mwpm.models import Model
+from t1t2_mwpm import gates
+
 
 def add_noise(
     circuit: Circuit,
@@ -26,27 +27,47 @@ def add_noise(
     if num_qubits != model.setup.num_qubits:
         raise ValueError("Number of qubits in circuit and the setup do not match.")
 
-
     qubit_inds = set(range(num_qubits))
     noisy_circuit = Circuit()
 
-    for inst in circuit.flattened():
-        name = inst.name
+    active_inds = set()
+    layer_duration = None
 
+    for instruction in circuit.flattened():
+        name = instruction.name
+    
         if name in gates.ANNOTATIONS:
-            noisy_circuit.append(inst)
+            if name == "TICK" and layer_duration is not None:
+                idle_inds = qubit_inds - set(active_inds)
+                for inst in model.idle(idle_inds, layer_duration):
+                    noisy_circuit.append(inst)
+
+                active_inds.clear()
+                layer_duration = None
+
+            noisy_circuit.append(instruction)
             continue
 
-        targets = inst.targets_copy()
+        targets = instruction.targets_copy()
         inds = [target.value for target in targets]
-        duration = model.setup.gate_durations[name]
+
+        if layer_duration is None:
+            layer_duration = model.setup.gate_durations[name]
+        else:
+            if layer_duration != model.setup.gate_durations[name]:
+                raise ValueError(
+                    "Each layer must should be composed of gates that are of the same duration."
+                )
+
+        if active_inds.intersection(inds):
+            raise ValueError(
+                "Multiple gates acting on the same qubits in a given layer."
+                "Each layer must should be composed of gates that are of the same duration and that are executed in parallel."
+            )
 
         for inst in model.generic_op(name, inds):
             noisy_circuit.append(inst)
 
-        idle_inds = qubit_inds - set(inds)
-        for inst in model.idle(idle_inds, duration):
-            noisy_circuit.append(inst)
-    
+        active_inds.update(inds)
 
     return noisy_circuit
