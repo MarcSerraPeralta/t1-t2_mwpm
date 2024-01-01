@@ -1,7 +1,7 @@
 from stim import Circuit
 
-from ..models import Model
-from .. import gates
+from .models import Model
+from . import gates
 
 def add_noise(
     circuit: Circuit,

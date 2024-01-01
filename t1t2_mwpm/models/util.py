@@ -1,6 +1,5 @@
 from typing import Tuple
-from warnings import warn
-from math import exp, inf
+from math import exp
 
 def idle_error_probs(
     relax_time: float, deph_time: float, duration: float
