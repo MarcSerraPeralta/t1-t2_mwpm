@@ -1,7 +1,7 @@
 from stim import Circuit
 
-from t1t2_mwpm.models import Model
-from t1t2_mwpm import gates
+from .models import Model
+from . import gates
 
 
 def add_noise(

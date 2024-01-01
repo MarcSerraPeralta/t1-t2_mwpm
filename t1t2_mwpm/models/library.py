@@ -1,12 +1,17 @@
-from typing import Iterator, Sequence
+from typing import Any, Iterator, Sequence
 
 from stim import CircuitInstruction
 
+from ..setup import Setup 
 from .model import Model
 from .util import idle_error_probs
 
 class DecoherenceModel(Model):
     """An coherence-limited noise model""" 
+
+    def __init__(self, setup: Setup, symmetric_noise: bool = False) -> Any:
+        self._sym_noise = symmetric_noise
+        return super().__init__(setup)
 
     def generic_op(self, name: str, qubits: Sequence[str]) -> Iterator[CircuitInstruction]:
         """
@@ -24,10 +29,17 @@ class DecoherenceModel(Model):
         Iterator[CircuitInstruction]
             The circuit instructions for a generic gate on the given qubits.
         """
-        duration = self._setup.gate_durations[name]
+        if self._sym_noise:
+            duration = 0.5 * self._setup.gate_durations[name]
 
-        yield CircuitInstruction(name, qubits)
-        yield from self.idle(qubits, duration)
+            yield from self.idle(qubits, duration)
+            yield CircuitInstruction(name, qubits)
+            yield from self.idle(qubits, duration)
+        else:
+            duration = self._setup.gate_durations[name]
+
+            yield CircuitInstruction(name, qubits)
+            yield from self.idle(qubits, duration)
 
     def x_gate(self, qubits: Sequence[str]) -> Iterator[CircuitInstruction]:
         """
