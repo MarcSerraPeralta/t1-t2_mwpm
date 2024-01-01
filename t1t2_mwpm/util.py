@@ -8,7 +8,7 @@ def add_noise(
     model: Model,
 ) -> Circuit:
     """
-    add_noise _summary_
+    add_noise Adds noise to an ideal Stim circuit.
 
     Parameters
     ----------
